@@ -120,7 +120,7 @@
                 @change="handleCategoryChange"
               >
                 <el-option
-                  v-for="cat in categories"
+                  v-for="cat in displayCategories"
                   :key="cat.slug"
                   :label="cat.name"
                   :value="cat.slug"
@@ -353,21 +353,8 @@
             Fechas & Garantías
           </h3>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Fecha de Disponibilidad</label>
-              <el-date-picker
-                v-model="availabilityDate"
-                type="date"
-                placeholder="Seleccionar fecha"
-                class="w-full"
-                format="YYYY-MM-DD"
-                value-format="YYYY-MM-DD"
-                :disabled="isReadOnly"
-              />
-            </div>
-
-            <div>
+          <div class="grid grid-cols-1 sm:grid-cols-1 gap-4 mb-3">
+             <div>
               <label class="block text-xs font-bold text-slate-700 mb-1">Rango Vigencia Promoción</label>
               <el-date-picker
                 v-model="promotionDateRange"
@@ -381,6 +368,20 @@
                 :disabled="isReadOnly"
               />
             </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Fecha de Disponibilidad</label>
+              <el-date-picker
+                v-model="availabilityDate"
+                type="date"
+                placeholder="Seleccionar fecha"
+                class="w-full"
+                format="YYYY-MM-DD"
+                value-format="YYYY-MM-DD"
+                :disabled="isReadOnly"
+              />
+            </div>
+
+           
           </div>
 
           <div class="space-y-3 pt-2 border-t border-slate-200/60">
@@ -592,6 +593,38 @@ watch(
   },
   { immediate: true }
 )
+const defaultCategories: ProductCategory[] = [
+  { slug: 'beauty', name: 'Beauty', url: '/products/category/beauty' },
+  { slug: 'fragrances', name: 'Fragrances', url: '/products/category/fragrances' },
+  { slug: 'furniture', name: 'Furniture', url: '/products/category/furniture' },
+  { slug: 'groceries', name: 'Groceries', url: '/products/category/groceries' },
+  { slug: 'home-decoration', name: 'Home Decoration', url: '/products/category/home-decoration' },
+  { slug: 'kitchen-accessories', name: 'Kitchen Accessories', url: '/products/category/kitchen-accessories' },
+  { slug: 'laptops', name: 'Laptops', url: '/products/category/laptops' },
+  { slug: 'mens-shirts', name: 'Mens Shirts', url: '/products/category/mens-shirts' },
+  { slug: 'mens-shoes', name: 'Mens Shoes', url: '/products/category/mens-shoes' },
+  { slug: 'mens-watches', name: 'Mens Watches', url: '/products/category/mens-watches' },
+  { slug: 'mobile-accessories', name: 'Mobile Accessories', url: '/products/category/mobile-accessories' },
+  { slug: 'motorcycle', name: 'Motorcycle', url: '/products/category/motorcycle' },
+  { slug: 'skin-care', name: 'Skin Care', url: '/products/category/skin-care' },
+  { slug: 'smartphones', name: 'Smartphones', url: '/products/category/smartphones' },
+  { slug: 'sports-accessories', name: 'Sports Accessories', url: '/products/category/sports-accessories' },
+  { slug: 'sunglasses', name: 'Sunglasses', url: '/products/category/sunglasses' },
+  { slug: 'tablets', name: 'Tablets', url: '/products/category/tablets' },
+  { slug: 'tops', name: 'Tops', url: '/products/category/tops' },
+  { slug: 'womens-bags', name: 'Womens Bags', url: '/products/category/womens-bags' },
+  { slug: 'womens-dresses', name: 'Womens Dresses', url: '/products/category/womens-dresses' },
+  { slug: 'womens-jewellery', name: 'Womens Jewellery', url: '/products/category/womens-jewellery' },
+  { slug: 'womens-shoes', name: 'Womens Shoes', url: '/products/category/womens-shoes' },
+  { slug: 'womens-watches', name: 'Womens Watches', url: '/products/category/womens-watches' },
+]
+
+const displayCategories = computed(() => {
+  if (props.categories && props.categories.length > 0) {
+    return props.categories
+  }
+  return defaultCategories
+})
 
 const availableSubcategories = computed(() => {
   const cat = category.value
