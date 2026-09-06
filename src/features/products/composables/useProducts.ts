@@ -1,0 +1,129 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
+import { computed, type Ref } from 'vue'
+import { productsApi } from '../api/products.api'
+import { categoriesApi } from '../api/categories.api'
+import type {
+  ProductFilters,
+  CreateProductPayload,
+  UpdateProductPayload,
+} from '../types/product.types'
+import { ElMessage } from 'element-plus'
+
+/**
+ * Fetch paginated & filtered products with TanStack Query
+ */
+export const useProductsQuery = (filters: Ref<ProductFilters>) =>
+  useQuery({
+    queryKey: computed(() => [
+      'products',
+      {
+        page: filters.value.page,
+        pageSize: filters.value.pageSize,
+        search: filters.value.search,
+        category: filters.value.category,
+        status: filters.value.status,
+        minPrice: filters.value.minPrice,
+        maxPrice: filters.value.maxPrice,
+        minRating: filters.value.minRating,
+        inStockOnly: filters.value.inStockOnly,
+        sortBy: filters.value.sortBy,
+        sortOrder: filters.value.sortOrder,
+      },
+    ]),
+    queryFn: () => productsApi.getProducts(filters.value),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  })
+
+/**
+ * Fetch product details by ID
+ */
+export const useProductQuery = (productId: Ref<number | null>) =>
+  useQuery({
+    queryKey: computed(() => ['product', productId.value]),
+    queryFn: () => productsApi.getProductById(productId.value!),
+    enabled: computed(() => productId.value !== null && productId.value > 0),
+  })
+
+/**
+ * Fetch available product categories
+ */
+export const useCategoriesQuery = () =>
+  useQuery({
+    queryKey: ['categories'],
+    queryFn: () => categoriesApi.getCategories(),
+    staleTime: 1000 * 60 * 30, // 30 minutes
+  })
+
+/**
+ * Create product mutation
+ */
+export const useCreateProductMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (payload: CreateProductPayload) => productsApi.createProduct(payload),
+    onSuccess: (newProduct) => {
+      ElMessage.success({
+        message: `Producto "${newProduct.title}" registrado exitosamente`,
+        duration: 4000,
+      })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+    },
+    onError: (error: any) => {
+      ElMessage.error({
+        message: error.message || 'Error al crear el producto',
+        duration: 5000,
+      })
+    },
+  })
+}
+
+/**
+ * Update product mutation
+ */
+export const useUpdateProductMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: UpdateProductPayload }) =>
+      productsApi.updateProduct(id, payload),
+    onSuccess: (updatedProduct) => {
+      ElMessage.success({
+        message: `Producto "${updatedProduct.title || 'actualizado'}" guardado correctamente`,
+        duration: 4000,
+      })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['product', updatedProduct.id] })
+    },
+    onError: (error: any) => {
+      ElMessage.error({
+        message: error.message || 'Error al actualizar el producto',
+        duration: 5000,
+      })
+    },
+  })
+}
+
+/**
+ * Delete product mutation
+ */
+export const useDeleteProductMutation = () => {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (id: number) => productsApi.deleteProduct(id),
+    onSuccess: (_, id) => {
+      ElMessage.success({
+        message: `Producto #${id} eliminado correctamente`,
+        duration: 4000,
+      })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+    },
+    onError: (error: any) => {
+      ElMessage.error({
+        message: error.message || 'Error al eliminar el producto',
+        duration: 5000,
+      })
+    },
+  })
+}
