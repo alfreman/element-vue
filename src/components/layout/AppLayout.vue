@@ -10,7 +10,7 @@
         @toggle-sidebar="toggleSidebar"
       />
 
-      <main class="flex-1 p-4 md:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+      <main class="flex-1 p-4 md:p-6 lg:p-8 w-full">
         <router-view v-slot="{ Component }">
           <transition name="fade" mode="out-in">
             <component :is="Component" />

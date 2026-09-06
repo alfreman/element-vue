@@ -5,6 +5,14 @@ import type {
   UpdateProductPayload,
 } from '../types/product.types'
 
+const getTodayDateString = (): string => {
+  const d = new Date()
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 export const getDefaultFormValues = (): ProductFormValues => ({
   title: '',
   description: '',
@@ -29,7 +37,7 @@ export const getDefaultFormValues = (): ProductFormValues => ({
   isNew: true,
   isOnSale: false,
   allowReturn: true,
-  availabilityDate: new Date(),
+  availabilityDate: getTodayDateString(),
   promotionDateRange: null,
   images: [],
   thumbnail: '',
@@ -60,7 +68,7 @@ export const mapProductToForm = (product: Product): ProductFormValues => ({
   isNew: false,
   isOnSale: (product.discountPercentage || 0) > 0,
   allowReturn: true,
-  availabilityDate: new Date(),
+  availabilityDate: product.meta?.createdAt ? product.meta.createdAt.split('T')[0] : getTodayDateString(),
   promotionDateRange: null,
   images: product.images ? [...product.images] : [],
   thumbnail: product.thumbnail || (product.images && product.images[0]) || '',
