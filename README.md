@@ -1,12 +1,12 @@
 # Vue 3 Admin ERP/POS — Módulo de Productos
 
-Demostración técnica profesional de un módulo administrativo de gestión de catálogo de productos para sistemas **ERP / POS**, construida con **Vue 3 (Composition API)**, **TypeScript**, **Vite**, **Element Plus**, **Tailwind CSS**, **TanStack Table**, **TanStack Query**, **VeeValidate**, **Zod** y **Axios**.
+Demostración técnica profesional de un módulo administrativo de gestión de catálogo de productos para sistemas **ERP / POS**, construida con **Vue 3 (Composition API)**, **TypeScript**, **Vite**, **Element Plus**, **Tailwind CSS**, **TanStack Query**, **VeeValidate**, **Zod** y **Axios**.
 
 ---
 
 ## 🚀 Arquitectura y Objetivos
 
-Esta aplicación demuestra una arquitectura **feature-oriented** altamente modular y escalable. La separación estricta entre capa visual, lógica de negocio y acceso a datos permite reemplazar la API de demostración por un backend empresarial en **NestJS** sin alterar los componentes de interfaz.
+Esta aplicación demuestra una arquitectura **feature-oriented** highly modular y escalable. La separación estricta entre capa visual, lógica de negocio y acceso a datos permite reemplazar la API de demostración por un backend empresarial en **NestJS** sin alterar los componentes de interfaz.
 
 ### Flujo de Datos Arquitectónico
 
@@ -16,7 +16,7 @@ Page (ProductsPage / DashboardPage)
    ├── UI Components (ProductFilters, ProductTable, ProductFormDrawer)
    │     │
    │     ├── Form Logic & Validation (useProductForm, VeeValidate + Zod Schema)
-   │     └── Table Logic (TanStack Table: sorting, pagination, row selection)
+   │     └── Table Logic (Element Plus <el-table>: sorting, pagination, row selection)
    │
    ├── Composables (useProducts, useProductForm, useImagePreview, useDebounce)
    │     │
@@ -37,7 +37,7 @@ Page (ProductsPage / DashboardPage)
 - **Build Tool**: Vite.
 - **UI Framework**: Element Plus (Componentes funcionales).
 - **Styling**: Tailwind CSS (Layout, Flex, Grid, Spacing, Responsive).
-- **Data Table**: `@tanstack/vue-table` v8.
+- **Data Table**: Element Plus `<el-table>` con paginación integrada.
 - **Server State & Cache**: `@tanstack/vue-query` v5.
 - **Form Validations**: VeeValidate + Zod (`@vee-validate/zod`).
 - **HTTP Client**: Axios.

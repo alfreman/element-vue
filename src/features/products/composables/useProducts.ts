@@ -1,16 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import { computed, type Ref } from 'vue'
-import { productsApi } from '../api/products.api'
+import { productsApi, type ProductsApiQueryParams } from '../api/products.api'
 import { categoriesApi } from '../api/categories.api'
 import type {
   ProductFilters,
   CreateProductPayload,
   UpdateProductPayload,
+  ProductListResponse,
 } from '../types/product.types'
 import { ElMessage } from 'element-plus'
 
 /**
  * Fetch paginated & filtered products with TanStack Query
+ * Parameters (page, pageSize, skip, limit) and post-filtering are managed inside this hook.
  */
 export const useProductsQuery = (filters: Ref<ProductFilters>) =>
   useQuery({
@@ -30,7 +32,53 @@ export const useProductsQuery = (filters: Ref<ProductFilters>) =>
         sortOrder: filters.value.sortOrder,
       },
     ]),
-    queryFn: () => productsApi.getProducts(filters.value),
+    queryFn: async (): Promise<ProductListResponse> => {
+      const limit = filters.value.pageSize || 10
+      const skip = Math.max(0, ((filters.value.page || 1) - 1) * limit)
+
+      const params: ProductsApiQueryParams = {
+        limit,
+        skip,
+        q: filters.value.search ? filters.value.search.trim() : undefined,
+        category: filters.value.category !== 'all' ? filters.value.category : undefined,
+        sortBy: filters.value.sortBy,
+        order: filters.value.sortOrder,
+      }
+
+      try {
+        const response = await productsApi.getProducts(params)
+        let filteredProducts = response.products || []
+
+        if (filters.value.minPrice !== undefined && filters.value.minPrice > 0) {
+          filteredProducts = filteredProducts.filter((p) => p.price >= filters.value.minPrice!)
+        }
+        if (filters.value.maxPrice !== undefined && filters.value.maxPrice < 2000) {
+          filteredProducts = filteredProducts.filter((p) => p.price <= filters.value.maxPrice!)
+        }
+        if (filters.value.minRating !== undefined && filters.value.minRating > 0) {
+          filteredProducts = filteredProducts.filter(
+            (p) => (p.rating || 0) >= filters.value.minRating!
+          )
+        }
+        if (filters.value.inStockOnly) {
+          filteredProducts = filteredProducts.filter((p) => p.stock > 0)
+        }
+
+        return {
+          products: filteredProducts,
+          total: response.total ?? filteredProducts.length,
+          skip: response.skip ?? skip,
+          limit: response.limit ?? limit,
+        }
+      } catch {
+        return {
+          products: [],
+          total: 0,
+          skip,
+          limit,
+        }
+      }
+    },
     staleTime: 1000 * 60 * 5, // 5 minutes
   })
 

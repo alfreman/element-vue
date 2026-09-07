@@ -2,12 +2,12 @@
   <div class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
     <!-- Selection & Quick Action Toolbar -->
     <div
-      v-if="selectedRowIds.length > 0"
+      v-if="selectedRows.length > 0"
       class="bg-blue-50/80 px-4 py-3 border-b border-blue-200/80 flex items-center justify-between text-xs text-brand-900"
     >
       <span class="font-bold flex items-center gap-2">
         <span class="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
-        {{ selectedRowIds.length }} producto(s) seleccionado(s)
+        {{ selectedRows.length }} producto(s) seleccionado(s)
       </span>
       <el-button size="small" type="danger" plain @click="handleBulkDelete">
         Eliminar seleccionados
@@ -39,67 +39,177 @@
       </AppEmptyState>
 
       <div v-else>
-        <!-- Desktop / Tablet Table View (hidden on small mobile screens) -->
+        <!-- Desktop / Tablet Customized Element Plus Table View -->
         <div class="hidden md:block overflow-x-auto">
-          <table class="w-full text-left border-collapse text-sm text-slate-700">
-            <thead class="bg-slate-50/90 border-b border-slate-200 text-xs font-bold text-slate-600 uppercase tracking-wider">
-              <tr v-for="headerGroup in table.getHeaderGroups()" :key="headerGroup.id">
-                <th
-                  v-for="header in headerGroup.headers"
-                  :key="header.id"
-                  class="px-4 py-3.5 select-none"
-                  :class="[
-                    header.column.getCanSort() ? 'cursor-pointer hover:bg-slate-100 transition-colors' : '',
-                    header.id === 'select' ? 'w-10 text-center' : '',
-                    header.id === 'actions' ? 'w-24 text-right' : '',
-                  ]"
-                  @click="header.column.getToggleSortingHandler()?.($event)"
-                >
-                  <div class="flex items-center gap-1.5" :class="[header.id === 'actions' ? 'justify-end' : '']">
-                    <FlexRender
-                      v-if="!header.isPlaceholder"
-                      :render="header.column.columnDef.header"
-                      :props="header.getContext()"
-                    />
-                    <span v-if="header.column.getCanSort()">
-                      <ArrowUpDown
-                        v-if="!header.column.getIsSorted()"
-                        class="w-3.5 h-3.5 text-slate-400 opacity-60"
-                      />
-                      <ArrowUp
-                        v-else-if="header.column.getIsSorted() === 'asc'"
-                        class="w-3.5 h-3.5 text-blue-600 font-bold"
-                      />
-                      <ArrowDown
-                        v-else
-                        class="w-3.5 h-3.5 text-blue-600 font-bold"
-                      />
-                    </span>
-                  </div>
-                </th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-200/80 bg-white">
-              <tr
-                v-for="row in table.getRowModel().rows"
-                :key="row.id"
-                class="hover:bg-blue-50/30 transition-colors group"
-                :class="[row.getIsSelected() ? 'bg-blue-50/50' : '']"
-              >
-                <td
-                  v-for="cell in row.getVisibleCells()"
-                  :key="cell.id"
-                  class="px-4 py-3 align-middle"
-                  :class="[cell.column.id === 'actions' ? 'text-right' : '']"
-                >
-                  <FlexRender
-                    :render="cell.column.columnDef.cell"
-                    :props="cell.getContext()"
+          <el-table
+            ref="tableRef"
+            :data="data"
+            style="width: 100%"
+            row-key="id"
+            header-cell-class-name="!bg-slate-50/90 !text-xs !font-bold !text-slate-600 !uppercase tracking-wider !py-3.5"
+            row-class-name="hover:!bg-blue-50/30 transition-colors group text-sm text-slate-700"
+            @selection-change="handleSelectionChange"
+          >
+            <!-- Selection Column -->
+            <el-table-column type="selection" width="50" align="center" />
+
+            <!-- Thumbnail Column -->
+            <el-table-column label="Imagen" width="85" align="center">
+              <template #default="{ row }">
+                <div class="flex justify-center items-center">
+                  <el-image
+                    v-if="row.thumbnail || row.images?.[0]"
+                    :src="row.thumbnail || row.images?.[0]"
+                    :preview-src-list="row.images || [row.thumbnail]"
+                    preview-teleported
+                    fit="cover"
+                    class="w-10 h-10 rounded-lg border border-slate-200 cursor-pointer hover:scale-110 transition-transform duration-200"
                   />
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                  <div
+                    v-else
+                    class="w-10 h-10 rounded bg-slate-100 flex items-center justify-center text-slate-400"
+                  >
+                    <ImageIcon class="w-5 h-5" />
+                  </div>
+                </div>
+              </template>
+            </el-table-column>
+
+            <!-- Product Title & Brand Column -->
+            <el-table-column prop="title" label="Producto" min-width="220" sortable>
+              <template #default="{ row }">
+                <div class="flex flex-col">
+                  <span class="font-bold text-slate-900 line-clamp-1 group-hover:text-blue-600 transition-colors">
+                    {{ row.title }}
+                  </span>
+                  <span class="text-xs text-slate-500 font-medium line-clamp-1">
+                    {{ row.brand || 'Marca genérica' }}
+                  </span>
+                </div>
+              </template>
+            </el-table-column>
+
+            <!-- SKU Column -->
+            <el-table-column prop="sku" label="SKU" width="130">
+              <template #default="{ row }">
+                <span class="font-mono text-xs text-slate-600 bg-slate-100/90 px-2 py-0.5 rounded font-semibold border border-slate-200/60">
+                  {{ row.sku || `SKU-${row.id}` }}
+                </span>
+              </template>
+            </el-table-column>
+
+            <!-- Category Column -->
+            <el-table-column prop="category" label="Categoría" width="130">
+              <template #default="{ row }">
+                <el-tag size="small" type="info" effect="plain" class="capitalize font-bold border-blue-200 text-blue-700 bg-blue-50/60">
+                  {{ row.category }}
+                </el-tag>
+              </template>
+            </el-table-column>
+
+            <!-- Price Column -->
+            <el-table-column prop="price" label="Precio" width="120" align="right" sortable>
+              <template #default="{ row }">
+                <span class="font-extrabold text-slate-900">
+                  {{ formatCurrency(row.price) }}
+                </span>
+              </template>
+            </el-table-column>
+
+            <!-- Discount Column -->
+            <el-table-column prop="discountPercentage" label="Descuento" width="110" align="center">
+              <template #default="{ row }">
+                <el-tag
+                  v-if="row.discountPercentage && row.discountPercentage > 0"
+                  size="small"
+                  type="danger"
+                  effect="light"
+                  class="font-bold"
+                >
+                  -{{ row.discountPercentage.toFixed(0) }}%
+                </el-tag>
+                <span v-else class="text-slate-400 text-xs">-</span>
+              </template>
+            </el-table-column>
+
+            <!-- Rating Column -->
+            <el-table-column prop="rating" label="Rating" width="100" align="center" sortable>
+              <template #default="{ row }">
+                <div class="flex items-center gap-1 font-bold text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200/60 w-fit mx-auto">
+                  <Star class="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  <span>{{ row.rating ? row.rating.toFixed(1) : '4.5' }}</span>
+                </div>
+              </template>
+            </el-table-column>
+
+            <!-- Stock Column -->
+            <el-table-column prop="stock" label="Stock" width="100" align="center" sortable>
+              <template #default="{ row }">
+                <span
+                  :class="[
+                    row.stock === 0
+                      ? 'text-red-600 font-bold'
+                      : row.stock < 10
+                      ? 'text-amber-600 font-bold'
+                      : 'text-slate-800 font-bold',
+                  ]"
+                >
+                  {{ row.stock }} un.
+                </span>
+              </template>
+            </el-table-column>
+
+            <!-- Status Column -->
+            <el-table-column prop="availabilityStatus" label="Estado" width="130" align="center">
+              <template #default="{ row }">
+                <ProductStatus
+                  :status="row.availabilityStatus || 'Activo'"
+                  :stock="row.stock"
+                />
+              </template>
+            </el-table-column>
+
+            <!-- Actions Column -->
+            <el-table-column label="Acciones" width="100" align="center" fixed="right">
+              <template #default="{ row }">
+                <el-dropdown trigger="click" placement="bottom-end">
+                  <el-button
+                    size="small"
+                    text
+                    class="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg"
+                  >
+                    <MoreVertical class="w-4 h-4" />
+                  </el-button>
+                  <template #dropdown>
+                    <el-dropdown-menu class="!rounded-xl !p-1">
+                      <el-dropdown-item class="!rounded-lg" @click="$emit('view', row)">
+                        <div class="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                          <Eye class="w-3.5 h-3.5 text-blue-600" />
+                          <span>Ver detalle</span>
+                        </div>
+                      </el-dropdown-item>
+                      <el-dropdown-item class="!rounded-lg" @click="$emit('edit', row)">
+                        <div class="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                          <Edit class="w-3.5 h-3.5 text-amber-600" />
+                          <span>Editar</span>
+                        </div>
+                      </el-dropdown-item>
+                      <el-dropdown-item
+                        divided
+                        class="!rounded-lg"
+                        @click="confirmDeleteProduct(row)"
+                      >
+                        <div class="flex items-center gap-2 text-xs text-red-600 font-bold">
+                          <Trash2 class="w-3.5 h-3.5" />
+                          <span>Eliminar</span>
+                        </div>
+                      </el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+              </template>
+            </el-table-column>
+          </el-table>
         </div>
 
         <!-- Mobile Cards Grid View (visible only on small mobile screens) -->
@@ -188,21 +298,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, h } from 'vue'
+import { ref } from 'vue'
 import {
-  useVueTable,
-  createColumnHelper,
-  getCoreRowModel,
-  getSortedRowModel,
-  FlexRender,
-  type SortingState,
-  type RowSelectionState,
-} from '@tanstack/vue-table'
-import { ElCheckbox, ElImage, ElTag, ElDropdown, ElDropdownMenu, ElDropdownItem, ElButton, ElMessageBox, ElMessage } from 'element-plus'
+  ElTable,
+  ElTableColumn,
+  ElImage,
+  ElTag,
+  ElDropdown,
+  ElDropdownMenu,
+  ElDropdownItem,
+  ElButton,
+  ElMessageBox,
+  ElMessage,
+  ElPagination,
+} from 'element-plus'
 import {
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
   MoreVertical,
   Eye,
   Edit,
@@ -212,6 +322,9 @@ import {
 } from 'lucide-vue-next'
 import type { Product } from '../types/product.types'
 import ProductStatus from './ProductStatus.vue'
+import AppLoading from '@/components/common/AppLoading.vue'
+import AppErrorState from '@/components/common/AppErrorState.vue'
+import AppEmptyState from '@/components/common/AppEmptyState.vue'
 import { formatCurrency } from '@/utils/formatters'
 import { DEFAULT_PAGE_SIZES } from '@/utils/constants'
 
@@ -242,14 +355,12 @@ const emit = defineEmits<{
   (e: 'reset-filters'): void
 }>()
 
-const sorting = ref<SortingState>([])
-const rowSelection = ref<RowSelectionState>({})
+const tableRef = ref<InstanceType<typeof ElTable> | null>(null)
+const selectedRows = ref<Product[]>([])
 
-const columnHelper = createColumnHelper<Product>()
-
-const selectedRowIds = computed(() => {
-  return Object.keys(rowSelection.value).filter((key) => rowSelection.value[key])
-})
+const handleSelectionChange = (rows: Product[]) => {
+  selectedRows.value = rows
+}
 
 const confirmDeleteProduct = (product: Product): void => {
   ElMessageBox.confirm(
@@ -270,204 +381,9 @@ const confirmDeleteProduct = (product: Product): void => {
     })
 }
 
-// Define TanStack Table Columns
-const columns = [
-  // Selection Column
-  columnHelper.display({
-    id: 'select',
-    header: ({ table }) =>
-      h(ElCheckbox, {
-        modelValue: table.getIsAllPageRowsSelected(),
-        indeterminate: table.getIsSomePageRowsSelected(),
-        'onUpdate:modelValue': (val: boolean) => table.toggleAllPageRowsSelected(!!val),
-      }),
-    cell: ({ row }) =>
-      h(ElCheckbox, {
-        modelValue: row.getIsSelected(),
-        'onUpdate:modelValue': (val: boolean) => row.toggleSelected(!!val),
-      }),
-  }),
-
-  // Thumbnail Column
-  columnHelper.accessor('thumbnail', {
-    id: 'thumbnail',
-    header: 'Imagen',
-    enableSorting: false,
-    cell: ({ row }) => {
-      const src = row.original.thumbnail || row.original.images?.[0]
-      const previewList = row.original.images || [src]
-      if (!src) {
-        return h('div', { class: 'w-10 h-10 rounded bg-slate-100 flex items-center justify-center text-slate-400' }, [
-          h(ImageIcon, { class: 'w-5 h-5' }),
-        ])
-      }
-      return h(ElImage, {
-        src,
-        previewSrcList: previewList,
-        previewTeleported: true,
-        fit: 'cover',
-        class: 'w-10 h-10 rounded-lg border border-slate-200 cursor-pointer hover:scale-110 transition-transform duration-200',
-      })
-    },
-  }),
-
-  // Title & Brand Column
-  columnHelper.accessor('title', {
-    id: 'title',
-    header: 'Producto',
-    cell: ({ row }) => {
-      const product = row.original
-      return h('div', { class: 'flex flex-col' }, [
-        h('span', { class: 'font-bold text-slate-900 line-clamp-1 group-hover:text-blue-600 transition-colors' }, product.title),
-        h('span', { class: 'text-xs text-slate-500 font-medium line-clamp-1' }, product.brand || 'Marca genérica'),
-      ])
-    },
-  }),
-
-  // SKU Column
-  columnHelper.accessor('sku', {
-    id: 'sku',
-    header: 'SKU',
-    cell: ({ row }) =>
-      h('span', { class: 'font-mono text-xs text-slate-600 bg-slate-100/90 px-2 py-0.5 rounded font-semibold border border-slate-200/60' }, row.original.sku || `SKU-${row.original.id}`),
-  }),
-
-  // Category Column
-  columnHelper.accessor('category', {
-    id: 'category',
-    header: 'Categoría',
-    cell: ({ row }) =>
-      h(
-        ElTag,
-        { size: 'small', type: 'info', effect: 'plain', class: 'capitalize font-bold border-blue-200 text-blue-700 bg-blue-50/60' },
-        () => row.original.category
-      ),
-  }),
-
-  // Price Column
-  columnHelper.accessor('price', {
-    id: 'price',
-    header: 'Precio',
-    cell: ({ row }) =>
-      h('span', { class: 'font-extrabold text-slate-900' }, formatCurrency(row.original.price)),
-  }),
-
-  // Discount Column
-  columnHelper.accessor('discountPercentage', {
-    id: 'discountPercentage',
-    header: 'Descuento',
-    cell: ({ row }) => {
-      const discount = row.original.discountPercentage
-      if (!discount || discount <= 0) return h('span', { class: 'text-slate-400 text-xs' }, '-')
-      return h(ElTag, { size: 'small', type: 'danger', effect: 'light', class: 'font-bold' }, () => `-${discount.toFixed(0)}%`)
-    },
-  }),
-
-  // Rating Column
-  columnHelper.accessor('rating', {
-    id: 'rating',
-    header: 'Rating',
-    cell: ({ row }) =>
-      h('div', { class: 'flex items-center gap-1 font-bold text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200/60 w-fit' }, [
-        h(Star, { class: 'w-3.5 h-3.5 fill-amber-400 text-amber-400' }),
-        row.original.rating ? row.original.rating.toFixed(1) : '4.5',
-      ]),
-  }),
-
-  // Stock Column
-  columnHelper.accessor('stock', {
-    id: 'stock',
-    header: 'Stock',
-    cell: ({ row }) => {
-      const stock = row.original.stock
-      const colorClass = stock === 0 ? 'text-red-600 font-bold' : stock < 10 ? 'text-amber-600 font-bold' : 'text-slate-800 font-bold'
-      return h('span', { class: colorClass }, `${stock} un.`)
-    },
-  }),
-
-  // Status Column
-  columnHelper.accessor('availabilityStatus', {
-    id: 'availabilityStatus',
-    header: 'Estado',
-    cell: ({ row }) =>
-      h(ProductStatus, {
-        status: row.original.availabilityStatus || 'Activo',
-        stock: row.original.stock,
-      }),
-  }),
-
-  // Actions Dropdown Column
-  columnHelper.display({
-    id: 'actions',
-    header: 'Acciones',
-    cell: ({ row }) => {
-      const product = row.original
-
-      return h(
-        ElDropdown,
-        { trigger: 'click', placement: 'bottom-end' },
-        {
-          default: () =>
-            h(
-              ElButton,
-              { size: 'small', text: true, class: 'p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg' },
-              () => h(MoreVertical, { class: 'w-4 h-4' })
-            ),
-          dropdown: () =>
-            h(ElDropdownMenu, { class: '!rounded-xl !p-1' }, () => [
-              h(
-                ElDropdownItem,
-                { class: '!rounded-lg', onClick: () => emit('view', product) },
-                () => h('div', { class: 'flex items-center gap-2 text-xs font-semibold text-slate-700' }, [h(Eye, { class: 'w-3.5 h-3.5 text-blue-600' }), 'Ver detalle'])
-              ),
-              h(
-                ElDropdownItem,
-                { class: '!rounded-lg', onClick: () => emit('edit', product) },
-                () => h('div', { class: 'flex items-center gap-2 text-xs font-semibold text-slate-700' }, [h(Edit, { class: 'w-3.5 h-3.5 text-amber-600' }), 'Editar'])
-              ),
-              h(
-                ElDropdownItem,
-                {
-                  divided: true,
-                  class: '!rounded-lg',
-                  onClick: () => confirmDeleteProduct(product),
-                },
-                () => h('div', { class: 'flex items-center gap-2 text-xs text-red-600 font-bold' }, [h(Trash2, { class: 'w-3.5 h-3.5' }), 'Eliminar'])
-              ),
-            ]),
-        }
-      )
-    },
-  }),
-]
-
-// Initialize TanStack Table instance
-const table = useVueTable({
-  get data() {
-    return props.data
-  },
-  columns,
-  state: {
-    get sorting() {
-      return sorting.value
-    },
-    get rowSelection() {
-      return rowSelection.value
-    },
-  },
-  onSortingChange: (updaterOrValue) => {
-    sorting.value = typeof updaterOrValue === 'function' ? updaterOrValue(sorting.value) : updaterOrValue
-  },
-  onRowSelectionChange: (updaterOrValue) => {
-    rowSelection.value = typeof updaterOrValue === 'function' ? updaterOrValue(rowSelection.value) : updaterOrValue
-  },
-  getCoreRowModel: getCoreRowModel(),
-  getSortedRowModel: getSortedRowModel(),
-})
-
 const handleBulkDelete = (): void => {
   ElMessageBox.confirm(
-    `¿Desea eliminar los ${selectedRowIds.value.length} productos seleccionados?`,
+    `¿Desea eliminar los ${selectedRows.value.length} productos seleccionados?`,
     'Eliminación Masiva',
     {
       confirmButtonText: 'Eliminar Todos',
@@ -476,8 +392,11 @@ const handleBulkDelete = (): void => {
       confirmButtonClass: 'el-button--danger',
     }
   ).then(() => {
-    ElMessage.success(`${selectedRowIds.value.length} productos eliminados exitosamente`)
-    rowSelection.value = {}
+    ElMessage.success(`${selectedRows.value.length} productos eliminados exitosamente`)
+    if (tableRef.value) {
+      tableRef.value.clearSelection()
+    }
+    selectedRows.value = []
   })
 }
 
@@ -489,3 +408,4 @@ const handlePageSizeChange = (newSize: number): void => {
   emit('update:pageSize', newSize)
 }
 </script>
+

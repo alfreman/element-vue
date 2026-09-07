@@ -26,7 +26,7 @@
       @reset="handleResetFilters"
     />
 
-    <!-- TanStack Table Block -->
+    <!-- Element Plus Table Block -->
     <ProductTable
       :data="productsData?.products || []"
       :total="productsData?.total || 0"
